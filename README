@@ -1,0 +1,23 @@
+DESCRIPTION
+
+	Just a pron downloader.
+
+USAGE
+
+	You can get a list of supported sites using:
+
+		pron -s
+
+
+	And download from one of them with:
+
+		pron http://my_pron_site.com/my_link
+
+	or even:
+
+		wget `pron http://my_pron_site.com/my_link`
+
+
+LICENSE
+
+	GPLv2, under docs/

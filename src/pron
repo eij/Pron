@@ -1,0 +1,54 @@
+#!/bin/bash
+
+VERSION="0.1"
+
+SITES=('empflix.com' 'keezmovies.com' 'pornhub.com' 'xhamster.com' 'xvideos.com')
+
+
+type -P curl &>/dev/null || { echo "I need curl. Please, install it." && exit 1; }
+
+display-supported() { echo "Currently supported sites (${#SITES[*]}): ${SITES[@]}"; }
+
+display-help() { echo -e "Usage: pron <URL>\n\n    -v, --version        display version\n    -h, --help           display help"; }
+
+display-version() { echo "Pron utils, version $VERSION"; }
+
+decode() { read IN; echo "$IN" | perl -MURI::Escape -lne 'print uri_unescape($_)'; }
+
+while getopts  "hvs" OPT
+do
+	case $OPT in
+		s) display-supported ;;
+		h) display-help ;;
+		v) display-version ;;
+		*) display-help ;;
+	esac
+done
+
+if [ "$OPTIND" -eq "2" ]; then
+	exit 0
+fi
+
+URL=`echo $1 | awk '{ gsub("http://|www.|/.*", "") }1'`
+
+case $URL in
+	empflix.com) LINK=`curl -sL $1 | sed -n 's/.*href="\(.*\)downloadButton.*/\1/p' | cut -d'"' -f1` ;;
+
+	keezmovies.com) LINK=`curl -sL $1 | sed -n 's/.*video_url=\(.*\)&amp;postroll_url.*/\1/p' | decode` ;;
+
+	pornhub.com) LINK=`curl -sL $1 | grep '.flv' | cut -d'"' -f4 | decode` ;;
+
+	redtube.com) LINK=`curl -sL $1 | grep -m1 'hashlink=' | sed -n 's/.*hashlink=\(.*\)&embed.*/\1/p' | decode` ;;
+
+	xhamster.com) LINK="http://xhamster.com/flv2/`curl -sL $1 | grep "'file':" | cut -d"'" -f4`" ;;
+
+	xvideos.com) LINK=`curl -sL $1 | sed -n 's/.*flv_url=\(.*\)&amp;url_bigthumb.*/\1/p' | decode` ;;
+esac
+
+if [ $LINK ]; then
+	echo $LINK
+else
+	echo "Something went wrong :\\"
+fi
+
+exit 0
