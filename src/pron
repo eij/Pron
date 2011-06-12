@@ -1,8 +1,8 @@
 #!/bin/bash
 
-VERSION="0.1"
+VERSION="0.1.1"
 
-SITES=('empflix.com' 'keezmovies.com' 'pornhub.com' 'xhamster.com' 'xvideos.com')
+SITES=('empflix.com' 'keezmovies.com' 'pornhub.com' 'redtube.com' 'xhamster.com' 'xvideos.com')
 
 
 type -P curl &>/dev/null || { echo "I need curl. Please, install it." && exit 1; }
@@ -38,7 +38,7 @@ case $URL in
 
 	pornhub.com) LINK=`curl -sL $1 | grep '.flv' | cut -d'"' -f4 | decode` ;;
 
-	redtube.com) LINK=`curl -sL $1 | grep -m1 'hashlink=' | sed -n 's/.*hashlink=\(.*\)&embed.*/\1/p' | decode` ;;
+	redtube.com) LINK=`curl -sL $1 | sed -n '0,/hashlink/s/.*hashlink=\(.*\)&embed.*/\1/p' | decode` ;;
 
 	xhamster.com) LINK="http://xhamster.com/flv2/`curl -sL $1 | grep "'file':" | cut -d"'" -f4`" ;;
 
