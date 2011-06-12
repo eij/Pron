@@ -1,52 +1,68 @@
 #!/bin/bash
 
-VERSION="0.1.1"
+VERSION="0.2"
 
 SITES=('empflix.com' 'keezmovies.com' 'pornhub.com' 'redtube.com' 'xhamster.com' 'xvideos.com')
+
+DOWNLOAD="n"
+DOWNLOAD_FILE="$HOME/pron-$RANDOM$RANDOM.flv"
 
 
 type -P curl &>/dev/null || { echo "I need curl. Please, install it." && exit 1; }
 
-display-supported() { echo "Currently supported sites (${#SITES[*]}): ${SITES[@]}"; }
+supporteds() { echo "Supported sites (${#SITES[*]}): ${SITES[@]}"; exit 0; }
 
-display-help() { echo -e "Usage: pron <URL>\n\n    -v, --version        display version\n    -h, --help           display help"; }
+usage() { echo -e "Usage: pron <URL>\n\n    -v             display version\n    -h             display help\n\n    -d             download"; exit 0; }
 
-display-version() { echo "Pron utils, version $VERSION"; }
+version() { echo "Pron utils, version $VERSION"; exit 0; }
 
 decode() { read IN; echo "$IN" | perl -MURI::Escape -lne 'print uri_unescape($_)'; }
 
-while getopts  "hvs" OPT
+domain() { echo $1 | awk '{gsub("http://|www.|/.*", "")}1'; }
+
+download() { wget --output-document=$DOWNLOAD_FILE "$1"; }
+
+while getopts "hvsd:" OPT
 do
 	case $OPT in
-		s) display-supported ;;
-		h) display-help ;;
-		v) display-version ;;
-		*) display-help ;;
+		d) DOWNLOAD="y"; URL="$OPTARG" ;;
+		s) supporteds ;;
+		h) usage ;;
+		v) version ;;
+		*) usage ;;
 	esac
 done
 
-if [ "$OPTIND" -eq "2" ]; then
-	exit 0
+if [ -x $URL ]; then
+	if [ -x $1 ]; then
+		usage
+	else
+		URL=$1
+	fi
 fi
 
-URL=`echo $1 | awk '{ gsub("http://|www.|/.*", "") }1'`
+DOMAIN=`domain $URL`
 
-case $URL in
-	empflix.com) LINK=`curl -sL $1 | sed -n 's/.*href="\(.*\)downloadButton.*/\1/p' | cut -d'"' -f1` ;;
+case $DOMAIN in
+	empflix.com) LINK=`curl -sL $URL | sed -n 's/.*href="\(.*\)downloadButton.*/\1/p' | cut -d'"' -f1` ;;
 
-	keezmovies.com) LINK=`curl -sL $1 | sed -n 's/.*video_url=\(.*\)&amp;postroll_url.*/\1/p' | decode` ;;
+	keezmovies.com) LINK=`curl -sL $URL | sed -n 's/.*video_url=\(.*\)&amp;postroll_url.*/\1/p' | decode` ;;
 
-	pornhub.com) LINK=`curl -sL $1 | grep '.flv' | cut -d'"' -f4 | decode` ;;
+	pornhub.com) LINK=`curl -sL $URL | grep '.flv' | cut -d'"' -f4 | decode` ;;
 
-	redtube.com) LINK=`curl -sL $1 | sed -n '0,/hashlink/s/.*hashlink=\(.*\)&embed.*/\1/p' | decode` ;;
+	redtube.com) LINK=`curl -sL $URL | sed -n '0,/hashlink/s/.*hashlink=\(.*\)&embed.*/\1/p' | decode` ;;
 
-	xhamster.com) LINK="http://xhamster.com/flv2/`curl -sL $1 | grep "'file':" | cut -d"'" -f4`" ;;
+	xhamster.com) LINK="http://xhamster.com/flv2/`curl -sL $URL | grep "'file':" | cut -d"'" -f4`" ;;
 
-	xvideos.com) LINK=`curl -sL $1 | sed -n 's/.*flv_url=\(.*\)&amp;url_bigthumb.*/\1/p' | decode` ;;
+	xvideos.com) LINK=`curl -sL $URL | sed -n 's/.*flv_url=\(.*\)&amp;url_bigthumb.*/\1/p' | decode` ;;
 esac
 
 if [ $LINK ]; then
-	echo $LINK
+	if [ $DOWNLOAD == "y" ]; then
+		download $LINK
+	else
+		echo $LINK
+	fi
 else
 	echo "Something went wrong :\\"
 fi
